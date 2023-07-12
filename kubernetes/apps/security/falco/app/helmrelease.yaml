@@ -1,0 +1,187 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: falco
+  namespace: security
+spec:
+  interval: 10m
+  chart:
+    spec:
+      # renovate: registryUrl=https://falcosecurity.github.io/charts
+      chart: falco
+      version: 3.3.0
+      sourceRef:
+        kind: HelmRepository
+        name: falco
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 5
+  upgrade:
+    remediation:
+      retries: 5
+
+  values:
+
+    image:
+      pullPolicy: IfNotPresent
+      registry: docker.io
+      repository: falcosecurity/falco-no-driver
+      tag: "0.35.1"
+
+    serviceAccount:
+      # -- Specifies whether a service account should be created.
+      create: true
+
+    controller:
+      # Available options: deployment, daemonset.
+      kind: daemonset
+      # Annotations to add to the daemonset or deployment
+      annotations: {}
+      daemonset:
+        updateStrategy:
+          type: RollingUpdate
+
+    driver:
+      # -- Set it to false if you want to deploy Falco without the drivers.
+      # Always set it to false when using Falco with plugins.
+      enabled: true
+      # -- Tell Falco which driver to use. Available options: module (kernel driver), ebpf (eBPF probe), modern-bpf (modern eBPF probe).
+      kind: module
+      # -- Configuration section for ebpf driver.
+      ebpf:
+        # -- Path where the eBPF probe is located. It comes handy when the probe have been installed in the nodes using tools other than the init
+        # container deployed with the chart.
+        path:
+        # -- Needed to enable eBPF JIT at runtime for performance reasons.
+        # Can be skipped if eBPF JIT is enabled from outside the container
+        hostNetwork: false
+        # -- Constrain Falco with capabilities instead of running a privileged container.
+        # This option is only supported with the eBPF driver and a kernel >= 5.8.
+        # Ensure the eBPF driver is enabled (i.e., setting the `driver.kind` option to `ebpf`).
+        leastPrivileged: false
+      # -- Configuration for the Falco init container.
+      loader:
+        # -- Enable/disable the init container.
+        enabled: true
+        initContainer:
+          image:
+            pullPolicy: IfNotPresent
+            registry: docker.io
+            repository: falcosecurity/falco-driver-loader
+            tag: "0.35.1"
+
+    # -- Gvisor configuration. Based on your system you need to set the appropriate values.
+    # Please, rembember to add pod tolerations and affinities in order to schedule the Falco pods in the gVisor enabled nodes.
+    gvisor:
+      # -- Set it to true if you want to deploy Falco with gVisor support.
+      enabled: false
+      # -- Runsc container runtime configuration. Falco needs to interact with it in order to intercept the activity of the sandboxed pods.
+      runsc:
+        # -- Absolute path of the `runsc` binary in the k8s nodes.
+        path: /home/containerd/usr/local/sbin
+        # -- Absolute path of the root directory of the `runsc` container runtime. It is of vital importance for Falco since `runsc` stores there the information of the workloads handled by it;
+        root: /run/containerd/runsc
+        # -- Absolute path of the `runsc` configuration file, used by Falco to set its configuration and make aware `gVisor` of its presence.
+        config: /run/containerd/runsc/config.toml
+
+    # Collectors for data enrichment (scenario requirement)
+    collectors:
+      # -- Enable/disable all the metadata collectors.
+      enabled: true
+
+      docker:
+        # -- Enable Docker support.
+        enabled: false
+
+      containerd:
+        # -- Enable ContainerD support.
+        enabled: true
+        # -- The path of the ContainerD socket.
+        socket: /run/containerd/containerd.sock
+
+      crio:
+        # -- Enable CRI-O support.
+        enabled: false
+
+      kubernetes:
+        # -- Enable Kubernetes meta data collection via a connection to the Kubernetes API server.
+        # When this option is disabled, Falco falls back to the container annotations to grap the meta data.
+        # In such a case, only the ID, name, namespace, labels of the pod will be available.
+        enabled: true
+
+    customRules:
+      {}
+      # Although Falco comes with a nice default rule set for detecting weird
+      # behavior in containers, our users are going to customize the run-time
+      # security rule sets or policies for the specific container images and
+      # applications they run. This feature can be handled in this section.
+      #
+      # Example:
+      #
+      # rules-traefik.yaml: |-
+      #   [ rule body ]
+
+    ########################
+    # Falco integrations   #
+    ########################
+
+    # -- For configuration values, see https://github.com/falcosecurity/charts/blob/master/falcosidekick/values.yaml
+    falcosidekick:
+      # -- Enable falcosidekick deployment.
+      enabled: false
+      # -- Enable usage of full FQDN of falcosidekick service (useful when a Proxy is used).
+      fullfqdn: false
+      # -- Listen port. Default value: 2801
+      listenPort: ""
+
+    falcoctl:
+      image:
+        pullPolicy: IfNotPresent
+        registry: docker.io
+        repository: falcosecurity/falcoctl
+        tag: "0.5.1"
+
+      artifact:
+        # -- Runs "falcoctl artifact install" command as an init container. It is used to install artfacts before
+        # Falco starts. It provides them to Falco by using an emptyDir volume.
+        install:
+          enabled: true
+
+      config:
+        # -- List of indexes that falcoctl downloads and uses to locate and download artiafcts. For more info see:
+        # https://github.com/falcosecurity/falcoctl/blob/main/proposals/20220916-rules-and-plugin-distribution.md#index-file-overview
+        indexes:
+          - name: falcosecurity
+            url: https://falcosecurity.github.io/falcoctl/index.yaml
+
+    ######################
+    # falco.yaml config  #
+    ######################
+    falco:
+      # File(s) or Directories containing Falco rules, loaded at startup.
+      # The name "rules_file" is only for backwards compatibility.
+      # If the entry is a file, it will be read directly. If the entry is a directory,
+      # every file in that directory will be read, in alphabetical order.
+      #
+      # falco_rules.yaml ships with the falco package and is overridden with
+      # every new software version. falco_rules.local.yaml is only created
+      # if it doesn't exist. If you want to customize the set of rules, add
+      # your customizations to falco_rules.local.yaml.
+      #
+      # The files will be read in the order presented here, so make sure if
+      # you have overrides they appear in later files.
+      # -- The location of the rules files that will be consumed by Falco.
+      rules_file:
+        - /etc/falco/falco_rules.yaml
+        - /etc/falco/falco_rules.local.yaml
+        - /etc/falco/rules.d
+
+      file_output:
+        # -- Enable file output for security notifications.
+        enabled: false
+        # -- Open file once or every time a new notification arrives.
+        keep_alive: false
+        # -- The filename for logging notifications.
+        filename: ./events.txt
