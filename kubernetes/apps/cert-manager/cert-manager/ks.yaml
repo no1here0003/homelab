@@ -5,8 +5,6 @@ metadata:
   name: cluster-apps-cert-manager
   namespace: flux-system
 spec:
-  dependsOn:
-    - name: cluster-apps-external-secrets
   path: ./kubernetes/apps/cert-manager/cert-manager/app
   prune: true
   sourceRef:
@@ -20,7 +18,7 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cluster-apps-cert-manager-issuer
+  name: cluster-apps-cert-manager-issuers
   namespace: flux-system
 spec:
   dependsOn:
