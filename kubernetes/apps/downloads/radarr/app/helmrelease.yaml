@@ -1,0 +1,117 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: radarr
+  namespace: downloads
+spec:
+  interval: 5m
+  chart:
+    spec:
+      # renovate: registryUrl=https://bjw-s.github.io/helm-charts/
+      chart: app-template
+      version: 1.5.1
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s-charts
+        namespace: flux-system
+      interval: 5m
+
+  # dependsOn:
+  #   - name: pod-gateway
+  #     namespace: vpn
+
+  install:
+    remediation:
+      retries: 5
+  upgrade:
+    remediation:
+      retries: 5
+  values:
+
+    podSecurityContext:
+      runAsUser: 568
+      runAsGroup: 568
+      fsGroup: 568
+      fsGroupChangePolicy: OnRootMismatch
+      supplementalGroups: [44, 109, 10000]
+
+    image:
+      repository: ghcr.io/onedr0p/radarr
+      tag: 4.6.4.7568
+
+    env:
+      TZ: "America/New_York"
+
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: "nginx"
+        hosts:
+          - host: &host "radarr.${INTERNAL_DOMAIN}"
+            paths:
+              - path: /
+                pathType: Prefix
+        tls:
+          - hosts:
+              - *host
+          - secretName: radarr-tls
+
+    service:
+      main:
+        ports:
+          http:
+            port: 7878
+
+    persistence:
+      config:
+        enabled: true
+        existingClaim: radarr-config
+      media:
+        enabled: true
+        type: custom
+        volumeSpec:
+          nfs:
+            server: "${NAS1_ADDR}"
+            path: /volume1/Media
+        mountPath: /media
+      backups:
+        enabled: true
+        type: custom
+        volumeSpec:
+          nfs:
+            server: "${NAS2_ADDR}"
+            path: /volume1/Kubernetes/radarr
+        mountPath: /config/Backups
+      temp:
+        enabled: true
+        type: custom
+        volumeSpec:
+          nfs:
+            server: "${NAS1_ADDR}"
+            path: /volume1/temp
+        mountPath: /temp_dir
+
+    resources:
+      requests:
+        memory: 2618M
+        cpu: 10m
+      limits:
+        memory: 8G
+        cpu: 6000m
+
+    metrics:
+      enabled: true
+      serviceMonitor:
+        interval: 3m
+        scrapeTimeout: 1m
+      prometheusRule:
+        enabled: true
+      # exporter:
+      #   image:
+      #     repository: ghcr.io/onedr0p/exportarr
+      #     tag: v1.3.0
+      #   env:
+      #     port: 9794
+      #     additionalMetrics: true
+      #     unknownQueueItems: true
