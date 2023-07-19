@@ -40,7 +40,7 @@ spec:
       guaranteedReplicaManagerCPU: 20
       defaultDataPath: /var/lib/longhorn
       concurrentAutomaticEngineUpgradePerNodeLimit: 3
-      defaultLonghornStaticStorageClass: longhorn-plex
+      defaultLonghornStaticStorageClass: longhorn
 
     ingress:
       enabled: true
