@@ -99,7 +99,7 @@ spec:
         type: custom
         volumeSpec:
           nfs:
-            server: "${NAS1_ADDR}"
+            server: "TheArk.local"
             path: /volume1/Media
         mountPath: /media
         readOnly: true
