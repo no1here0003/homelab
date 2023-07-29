@@ -33,7 +33,7 @@ spec:
 
     image:
       repository: ghcr.io/onedr0p/prowlarr-nightly
-      tag: 1.8.0.3796
+      tag: 1.8.0.3803
 
     env:
       TZ: "America/New_York"
