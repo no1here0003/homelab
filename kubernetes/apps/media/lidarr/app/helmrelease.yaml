@@ -56,10 +56,6 @@ spec:
           - hosts:
               - *host
             secretName: lidarr-tls
-        tls:
-          - hosts:
-              - *host
-            secretName: lidarr-tls
 
     podSecurityContext:
       runAsUser: 568
