@@ -7,8 +7,6 @@ metadata:
   labels:
     substitution.flux.home.arpa/enabled: "true"
 spec:
-  dependsOn:
-    - name: cluster-apps-longhorn-recurring-jobs
   path: ./kubernetes/apps/media/lidarr/app
   prune: true
   sourceRef:
@@ -22,3 +20,4 @@ spec:
   interval: 30m
   retryInterval: 1m
   timeout: 3m
+  wait: false
