@@ -14,8 +14,8 @@ spec:
   primaryUpdateStrategy: unsupervised
 
   storage:
-    size: 20Gi
-    storageClass: longhorn-database
+    size: 100Gi
+    storageClass: local-path
 
   superuserSecret:
     name: cloudnative-pg-secret
