@@ -105,14 +105,14 @@ spec:
             path: /volume1/Media2
         mountPath: /media2
 
-      # media3:
-      #   enabled: true
-      #   type: custom
-      #   volumeSpec:
-      #     nfs:
-      #       server: "${NAS3_ADDR}"
-      #       path: /volume1/Plex
-      #   mountPath: /media3
+      media3:
+        enabled: true
+        type: custom
+        volumeSpec:
+          nfs:
+            server: "${NAS3_ADDR}"
+            path: /volume1/Plex
+        mountPath: /media3
 
       temp:
         enabled: true
