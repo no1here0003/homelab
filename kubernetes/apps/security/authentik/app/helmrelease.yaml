@@ -10,7 +10,7 @@ spec:
     spec:
       # renovate: registryUrl=https://charts.goauthentik.io
       chart: authentik
-      version: 2023.6.3
+      version: 2023.8.0
       sourceRef:
         kind: HelmRepository
         name: authentik
@@ -74,8 +74,6 @@ spec:
         password: ${SECRET_AUTHENTIK_REDIS_PASSWORD}
 
     postgresql:
-      diagnosticMode:
-        enabled: true
       enabled: true
       persistence:
         enabled: true
